@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YANNZ STORE ⚓</title>
+
+<style>
+body{
+ margin:0;
+ font-family:sans-serif;
+ color:white;
+ background:linear-gradient(180deg,#0f0c29,#302b63,#24243e);
+}
+
+/* page */
+.page{display:none;padding:20px;}
+.active{display:block;}
+
+h2{
+ text-align:center;
+ text-shadow:0 0 10px purple;
+}
+
+/* input & button */
+input,button{
+ width:90%;
+ padding:12px;
+ margin:6px;
+ border:none;
+ border-radius:10px;
+}
+
+button{
+ background:linear-gradient(45deg,purple,blue);
+ color:white;
+ font-weight:bold;
+}
+
+/* card */
+.card{
+ background:rgba(255,255,255,0.08);
+ padding:15px;
+ margin:12px 0;
+ border-radius:12px;
+ box-shadow:0 0 10px rgba(128,0,255,0.5);
+}
+
+/* klik list */
+.list-item{
+ padding:12px;
+ border-bottom:1px solid rgba(255,255,255,0.1);
+ cursor:pointer;
+}
+.list-item:hover{
+ background:rgba(255,255,255,0.1);
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="page active">
+<h2>🔒 LOGIN</h2>
+
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
+
+<button onclick="login()">MASUK</button>
+</div>
+
+<!-- GATE -->
+<div id="gate" class="page">
+<h2>⚓ MENU UTAMA</h2>
+
+<div class="card">
+<button onclick="joinChannel()">📢 JOIN SALURAN</button>
+<button onclick="joinGroup()">👥 JOIN GRUB</button>
+</div>
+
+<div class="card">
+<button onclick="alert(rewardText)">🎁 GATE REWARD</button>
+</div>
+
+<div class="card">
+<button onclick="showPage('list')">📋 OPEN LIST</button>
+</div>
+</div>
+
+<!-- LIST -->
+<div id="list" class="page">
+<h2>📋 OPEN LIST</h2>
+
+<!-- KATEGORI KLIK -->
+<div class="card">
+<div class="list-item" onclick="order('TOP UP GAME')">TOP UP GAME</div>
+<div class="list-item" onclick="order('FILE FF')">FILE FF</div>
+<div class="list-item" onclick="order('WEB & APK')">WEB & APK</div>
+</div>
+
+<!-- FULL LIST -->
+<div class="card">
+<pre style="white-space:pre-wrap;font-size:12px;">
+WTS KEBUTUHAN DIGITAL BY YANNZ⚓
+
+-----------------------------------
+•TOP UP ALL GAME MURAH/TERJANGKAU 
+-WDP ML 28K
+-FF
+-ML 
+-DLL
+_____________________
+FILE EPEP 😈
+
+PANEL
+________________
+-DRIP CLINET V1 ~30K~ 15k
+-DRIP CLINT V4 ~40K~ 20k
+-DRAGON MODS V10 25K
+-ZURA.XAPK 30K
+-PANEL EASY DRAG 25K
+AIM GOOD 15K
+FF7HX 5K
+
+_____________________
+FILE FF
+
+-REGE BRUTALITY 10K
+-AIM STABILIZER 15K
+-GS FILE 5K
+-LIB FILE 5K
+-FIX LAG 5K
+-BODY HS 40K
+-AIMLOCK DLL
+
+_____________________
+WEB & APK
+
+-APK PUSH KONTAK 5K
+-APK BIOSKOP 2K
+-WEB NOKOS 5K
+DLL...
+</pre>
+</div>
+
+<button onclick="showPage('gate')">⬅ KEMBALI</button>
+</div>
+
+<!-- ADMIN -->
+<div id="admin" class="page">
+<h2>⚙️ ADMIN PANEL</h2>
+
+<h3>Edit Reward</h3>
+<input id="rewardInput">
+<button onclick="saveReward()">Simpan</button>
+
+<button onclick="showPage('gate')">⬅ KEMBALI</button>
+</div>
+
+<script>
+
+// ===== DATA LOGIN =====
+const ADMIN = {
+ user:"OWNER_YANZZ",
+ pass:"27051210#$+-"
+}
+
+const MEMBER = {
+ user:"YanzzMEMBER",
+ pass:"12345678"
+}
+
+// ===== LOGIN =====
+function login(){
+ let u = document.getElementById("user").value;
+ let p = document.getElementById("pass").value;
+
+ if(u===ADMIN.user && p===ADMIN.pass){
+  showPage("admin");
+ }else if(u===MEMBER.user && p===MEMBER.pass){
+  showPage("gate");
+ }else{
+  alert("Username / Password salah!");
+ }
+}
+
+// ===== NAV =====
+function showPage(id){
+ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+}
+
+// ===== JOIN =====
+function joinChannel(){
+ window.open("https://whatsapp.com/channel/0029VbCWWN96rsQsfLC0B71f");
+}
+
+function joinGroup(){
+ window.open("https://chat.whatsapp.com/HZJVWkSLsECBV7f1S4FpxN?mode=gi_t");
+}
+
+// ===== ORDER =====
+function order(kategori){
+ let text=`Halo BG saya ingin beli kebutuhan digital berupa ${kategori}`;
+ window.open(`https://wa.me/6282164463311?text=${encodeURIComponent(text)}`);
+}
+
+// ===== REWARD =====
+let rewardText = localStorage.getItem("reward") || "Belum ada reward";
+
+function saveReward(){
+ rewardText = document.getElementById("rewardInput").value;
+ localStorage.setItem("reward", rewardText);
+ alert("Reward disimpan!");
+}
+
+</script>
+
+</body>
+  </html>
