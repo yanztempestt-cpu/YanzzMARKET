@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YANNZ JB STORE ⚓</title>
+
+<style>
+body{
+ margin:0;
+ font-family:sans-serif;
+ color:white;
+ background:url('https://drive.google.com/uc?export=view&id=1f2QWvPQPxEusa4rtRoz2cUbhyz7LhKma') center/cover;
+ overflow:hidden;
+}
+.overlay{
+ position:fixed;
+ width:100%;
+ height:100%;
+ background:rgba(0,0,0,0.7);
+ top:0;left:0;z-index:-1;
+}
+canvas{
+ position:fixed;
+ top:0;left:0;z-index:-1;
+}
+.nav{
+ display:flex;
+ justify-content:space-around;
+ background:rgba(0,0,0,0.8);
+ padding:12px;
+ box-shadow:0 0 15px purple;
+}
+.nav button{
+ background:none;border:none;color:white;font-weight:bold;
+}
+.page{
+ display:none;padding:20px;height:90vh;overflow:auto;
+}
+.active{display:block;}
+.card{
+ background:rgba(255,255,255,0.08);
+ margin:10px 0;
+ padding:15px;
+ border-radius:15px;
+ backdrop-filter:blur(8px);
+ box-shadow:0 0 15px purple;
+}
+.btn{
+ padding:10px;border:none;border-radius:10px;
+ background:linear-gradient(45deg,#7b00ff,#00c3ff);
+ color:white;margin-top:5px;
+}
+input{
+ width:90%;padding:10px;margin:5px;border-radius:8px;border:none;
+}
+h2{text-align:center;text-shadow:0 0 10px purple;}
+</style>
+</head>
+
+<body>
+
+<canvas id="stars"></canvas>
+<div class="overlay"></div>
+
+<!-- NAV -->
+<div class="nav">
+<button onclick="showPage('home')">HOME</button>
+<button onclick="showPage('list')">OPEN LIST</button>
+<button onclick="showPage('adminLogin')">ADMIN</button>
+</div>
+
+<!-- JOIN WA -->
+<div id="joinPage" class="page active">
+<h2>JOIN DULU ⚓</h2>
+
+<p>⚠️ Wajib join untuk akses & reward</p>
+
+<button class="btn" onclick="joinWA('channel')">JOIN CHANNEL</button>
+<button class="btn" onclick="joinWA('group')">JOIN GRUB</button>
+
+<br><br>
+
+<button class="btn" onclick="confirmJoin()">SAYA SUDAH JOIN</button>
+</div>
+
+<!-- HOME -->
+<div id="home" class="page">
+<h2>YANNZ JB STORE</h2>
+
+<input placeholder="Search..." oninput="search(this.value)">
+
+<div id="products"></div>
+</div>
+
+<!-- LIST -->
+<div id="list" class="page">
+<h2>OPEN LIST</h2>
+<div class="card">
+<pre style="white-space:pre-wrap;font-size:12px;">
+WTS KEBUTUHAN DIGITAL BY YANNZ⚓
+
+TOP UP ALL GAME
+ML / FF / DLL
+
+WEB & APK • FILE • PANEL
+DLL...
+
+(TEMPAT LIST FULL KAMU)
+</pre>
+</div>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div id="adminLogin" class="page">
+<h2>ADMIN LOGIN</h2>
+<input id="adminPass" placeholder="Password">
+<button class="btn" onclick="loginAdmin()">LOGIN</button>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="page">
+<h2>ADMIN PANEL</h2>
+
+<input id="name" placeholder="Nama Produk">
+<input id="price" placeholder="Harga">
+<input id="stock" placeholder="Stok">
+<input id="label" placeholder="Label">
+<button class="btn" onclick="saveProduct()">Simpan</button>
+
+<hr>
+
+<input id="bg" placeholder="Link Background">
+<button class="btn" onclick="setBG()">Ganti BG</button>
+</div>
+
+<script>
+
+// ===== WA LINK (WAJIB EDIT) =====
+const WA_CHANNEL = "https://whatsapp.com/channel/XXXX";
+const WA_GROUP = "https://chat.whatsapp.com/XXXX";
+const ADMIN_PASS = "admin123";
+
+// ===== JOIN SYSTEM =====
+function joinWA(type){
+ if(type==="channel") window.open(WA_CHANNEL);
+ else window.open(WA_GROUP);
+}
+
+function confirmJoin(){
+ let name = prompt("Masukkan nama kamu:");
+ if(!name) return;
+
+ localStorage.setItem("user", name);
+ localStorage.setItem("joined", "true");
+
+ alert("✅ Join berhasil! Reward aktif");
+ showPage("home");
+}
+
+// cek join
+if(localStorage.getItem("joined")){
+ document.getElementById("joinPage").style.display="none";
+ showPage("home");
+}
+
+// ===== ADMIN LOGIN =====
+function loginAdmin(){
+ let pass = document.getElementById("adminPass").value;
+ if(pass === ADMIN_PASS){
+  showPage("adminPanel");
+ }else{
+  alert("Password salah!");
+ }
+}
+
+// ===== NAV =====
+function showPage(id){
+ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+}
+
+// ===== DATA =====
+let products = JSON.parse(localStorage.getItem("products")||"[]");
+let editIndex = -1;
+
+// ===== RENDER =====
+function render(list=products){
+ let el=document.getElementById("products");
+ el.innerHTML="";
+
+ list.forEach((p,i)=>{
+  el.innerHTML+=`
+  <div class="card">
+   <h3>${p.name}</h3>
+   <small>${p.label||""}</small>
+   <p>💰 ${p.price}</p>
+   <p>📦 ${p.stock}</p>
+   <button class="btn" onclick="order('${p.name}','${p.price}')">ORDER</button>
+   <button onclick="edit(${i})">✏️</button>
+   <button onclick="del(${i})">🗑️</button>
+  </div>`;
+ });
+
+ localStorage.setItem("products",JSON.stringify(products));
+}
+
+// ===== CRUD =====
+function saveProduct(){
+ let name=val("name");
+ let price=val("price");
+ let stock=val("stock");
+ let label=val("label");
+
+ if(editIndex>-1){
+  products[editIndex]={name,price,stock,label};
+  editIndex=-1;
+ }else{
+  products.push({name,price,stock,label});
+ }
+
+ render();
+}
+
+function edit(i){
+ let p=products[i];
+ setVal("name",p.name);
+ setVal("price",p.price);
+ setVal("stock",p.stock);
+ setVal("label",p.label);
+ editIndex=i;
+}
+
+function del(i){
+ products.splice(i,1);
+ render();
+}
+
+// ===== SEARCH =====
+function search(q){
+ q=q.toLowerCase();
+ render(products.filter(p=>p.name.toLowerCase().includes(q)));
+}
+
+// ===== ORDER WA =====
+function order(name,price){
+ let user = localStorage.getItem("user") || "User";
+ let text=`Halo BG, saya ${user} mau order:\n\nProduk: ${name}\nHarga: ${price}`;
+ window.open(`https://wa.me/628XXXXXXXXXX?text=${encodeURIComponent(text)}`);
+}
+
+// ===== BG =====
+function setBG(){
+ let bg=val("bg");
+ document.body.style.background=`url(${bg}) center/cover`;
+ localStorage.setItem("bg",bg);
+}
+
+if(localStorage.getItem("bg")){
+ document.body.style.background=`url(${localStorage.getItem("bg")}) center/cover`;
+}
+
+// ===== BINTANG =====
+let c=document.getElementById("stars");
+let ctx=c.getContext("2d");
+c.width=window.innerWidth;
+c.height=window.innerHeight;
+
+let stars=[];
+for(let i=0;i<120;i++){
+ stars.push({x:Math.random()*c.width,y:Math.random()*c.height,s:Math.random()*2,v:Math.random()*0.5});
+}
+
+function anim(){
+ ctx.clearRect(0,0,c.width,c.height);
+ stars.forEach(s=>{
+  ctx.fillStyle="white";
+  ctx.fillRect(s.x,s.y,s.s,s.s);
+  s.y+=s.v;
+  if(s.y>c.height)s.y=0;
+ });
+ requestAnimationFrame(anim);
+}
+anim();
+
+// helper
+function val(id){return document.getElementById(id).value}
+function setVal(id,v){document.getElementById(id).value=v}
+
+render();
+
+</script>
+
+</body>
+  </html>
