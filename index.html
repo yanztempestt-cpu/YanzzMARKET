@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🔐 PANEL CIT · AUTH SYSTEM + MOD MENU GACOR</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 30% 10%, #0a0f1e, #010101);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', 'Segoe UI', monospace;
+            padding: 1rem;
+        }
+
+        /* container utama bergantung role */
+        .glass-panel {
+            max-width: 550px;
+            width: 100%;
+            background: rgba(6, 12, 24, 0.9);
+            backdrop-filter: blur(16px);
+            border-radius: 2.5rem;
+            border: 1px solid rgba(0, 255, 255, 0.6);
+            box-shadow: 0 25px 40px rgba(0,0,0,0.7), 0 0 18px cyan;
+            padding: 2rem 1.8rem;
+            transition: 0.2s;
+        }
+
+        .cyber-title {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .cyber-title h2 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, cyan, #b3ffaa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .input-field {
+            margin-bottom: 1.3rem;
+        }
+
+        .input-field label {
+            color: #aaffff;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            font-family: monospace;
+        }
+
+        .input-field input, .input-field select {
+            width: 100%;
+            background: #07121f;
+            border: 1px solid #2c7f8f;
+            padding: 0.8rem 1rem;
+            border-radius: 40px;
+            color: #0ff;
+            font-family: monospace;
+            outline: none;
+        }
+
+        .login-btn {
+            width: 100%;
+            background: linear-gradient(95deg, #002b3b, #004f66);
+            border: 1px solid cyan;
+            color: cyan;
+            padding: 0.8rem;
+            border-radius: 60px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        .error-msg {
+            background: #3a151faa;
+            border-left: 4px solid #ff5577;
+            padding: 0.5rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            text-align: center;
+            margin-top: 1rem;
+            color: #ffaa99;
+        }
+
+        .info-tier {
+            margin-top: 1rem;
+            font-size: 0.65rem;
+            text-align: center;
+            color: #7bb8d0;
+        }
+
+        hr {
+            border-color: #2f8f9f;
+            margin: 1rem 0;
+        }
+
+        button {
+            background: none;
+            border: none;
+        }
+        .flex-btns {
+            display: flex;
+            gap: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        .admin-area {
+            background: #001e2acc;
+            border-radius: 24px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .badge-key {
+            font-family: monospace;
+            background: #00000066;
+            padding: 6px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+        }
+    </style>
+</head>
+<body>
+<div id="appRoot"></div>
+
+<script>
+    // ======================= SISTEM AUTH MULTI-TIER =======================
+    // KREDENSIAL SESUAI PERMINTAAN :
+    // 1. YanzzCITELMMBT / 12345678   -> raw ban (peringatan)
+    // 2. YanzzCITELVVIP / (key khusus yg dibuat admin) -> kemungkinan ban kecil
+    // 3. YanzzCITELLL / 27051207#$+-  -> ADMIN (full akses + bikin key utk member VIP)
+    // KEY untuk member VIP bisa di set duration: 1hari,3hari,4hari,5hari,2minggu,1bulan,PERMANEN
+    
+    // storage
+    let currentSession = {
+        loggedIn: false,
+        role: null,      // 'mmbt', 'vvip', 'admin'
+        username: null,
+        keyExpiry: null   // untuk member VIP berlaku sampai timestamp
+    };
+    
+    let generatedKeys = JSON.parse(localStorage.getItem('cit_vip_keys') || '[]'); // list {key, expiryDate, usedBy}
+    
+    // Helper simpan key
+    function saveKeys() {
+        localStorage.setItem('cit_vip_keys', JSON.stringify(generatedKeys));
+    }
+    
+    // cek apakah key VIP masih berlaku
+    function isKeyValid(keyObj) {
+        if (!keyObj.expiryDate) return false;
+        return new Date(keyObj.expiryDate) > new Date();
+    }
+    
+    // generate random key 16 karakter
+    function generateRandomKey() {
+        return 'CITVIP-' + Math.random().toString(36).substring(2, 10).toUpperCase() + '-' + Math.floor(1000+Math.random()*9000);
+    }
+    
+    // Main render
+    function render() {
+        const root = document.getElementById('appRoot');
+        if (!currentSession.loggedIn) {
+            // TAMPILAN LOGIN
+            root.innerHTML = `
+                <div class="glass-panel">
+                    <div class="cyber-title">
+                        <h2>◈ PANEL CIT · AUTH ◈</h2>
+                        <div style="font-size:0.7rem;">MOD MENU GACOR | ANTI BAN TERBAIK</div>
+                    </div>
+                    <div class="input-field">
+                        <label>👤 USERNAME</label>
+                        <input type="text" id="loginUser" placeholder="YanzzCITELMMBT / YanzzCITELVVIP / YanzzCITELLL">
+                    </div>
+                    <div class="input-field">
+                        <label>🔑 PASSWORD / KEY</label>
+                        <input type="password" id="loginPass" placeholder="password atau key VIP">
+                    </div>
+                    <button class="login-btn" id="doLoginBtn">⟳ AUTHENTICATE ⟳</button>
+                    <div id="loginError" class="error-msg" style="display:none;"></div>
+                    <div class="info-tier">⚡ YanzzCITELMMBT (raw ban high risk) | YanzzCITELVVIP (pakai key) | YanzzCITELLL (admin)</div>
+                </div>
+            `;
+            const loginBtn = document.getElementById('doLoginBtn');
+            const userInp = document.getElementById('loginUser');
+            const passInp = document.getElementById('loginPass');
+            const errDiv = document.getElementById('loginError');
+            
+            const attemptLogin = () => {
+                const username = userInp.value.trim();
+                const password = passInp.value.trim();
+                errDiv.style.display = 'none';
+                // ADMIN login
+                if (username === 'YanzzCITELLL' && password === '27051207#$+-') {
+                    currentSession = { loggedIn: true, role: 'admin', username: 'YanzzCITELLL', keyExpiry: null };
+                    render();
+                    return;
+                }
+                // MMBT login (raw ban)
+                if (username === 'YanzzCITELMMBT' && password === '12345678') {
+                    currentSession = { loggedIn: true, role: 'mmbt', username: 'YanzzCITELMMBT', keyExpiry: null };
+                    render();
+                    return;
+                }
+                // VIP login: cek apakah password adalah key yang valid dari admin dan belum expired
+                const foundKey = generatedKeys.find(k => k.key === password && !k.usedBy && isKeyValid(k));
+                if (username === 'YanzzCITELVVIP' && foundKey) {
+                    // tandai key sudah digunakan
+                    foundKey.usedBy = 'YanzzCITELVVIP';
+                    foundKey.usedAt = new Date().toISOString();
+                    saveKeys();
+                    currentSession = { loggedIn: true, role: 'vvip', username: 'YanzzCITELVVIP', keyExpiry: foundKey.expiryDate };
+                    render();
+                    return;
+                }
+                errDiv.style.display = 'block';
+                errDiv.innerHTML = '❌ LOGIN GAGAL! Cek username / password atau key VIP tidak valid / kadaluarsa.';
+            };
+            loginBtn.onclick = attemptLogin;
+            [userInp, passInp].forEach(inp => inp.addEventListener('keypress', (e) => { if(e.key === 'Enter') attemptLogin(); }));
+            return;
+        }
+        
+        // ========== SETELAH LOGIN SUKSES ==========
+        // Tampilkan Panel MOD MENU sesuai role (MMBT, VIP, ADMIN)
+        if (currentSession.role === 'mmbt') {
+            root.innerHTML = getPanelMMBT();
+            attachModMenuEvents('mmbt');
+        } else if (currentSession.role === 'vvip') {
+            root.innerHTML = getPanelVIP();
+            attachModMenuEvents('vvip');
+        } else if (currentSession.role === 'admin') {
+            root.innerHTML = getAdminPanel();
+            attachAdminEvents();
+            attachModMenuEvents('admin'); // admin juga bisa pakai mod menu
+        }
+    }
+    
+    // Panel untuk MMBT (raw ban, peringatan)
+    function getPanelMMBT() {
+        return `
+            <div class="glass-panel">
+                <div class="cyber-title"><h2>⚠️ PANEL CIT · MMBT ⚠️</h2><div style="color:#ff8888;">RESIKO BAN TINGGI ! FITUR TETAP JALAN</div></div>
+                ${getModMenuHTML()}
+                <div class="error-msg" style="background:#881111;">⚠️ WARNING: Mode MMBT raw ban terdeteksi kemungkinan banned akun besar ⚠️</div>
+                <button class="login-btn" id="logoutBtn" style="margin-top:16px;">🚪 LOGOUT</button>
+            </div>
+        `;
+    }
+    
+    // Panel VIP (key based, anti ban kecil)
+    function getPanelVIP() {
+        let expiryText = currentSession.keyExpiry ? new Date(currentSession.keyExpiry).toLocaleString() : 'PERMANEN';
+        return `
+            <div class="glass-panel">
+                <div class="cyber-title"><h2>✨ PANEL CIT · VIP GACOR ✨</h2><div style="color: #aaffdd;">✦ ANTI BAN KECIL | WORK 100% ✦</div></div>
+                <div class="info-tier">🔐 Masa aktif key: <strong style="color:#ffff80;">${expiryText}</strong> | FULL FITUR MOD MENU</div>
+                ${getModMenuHTML()}
+                <button class="login-btn" id="logoutBtn" style="margin-top:16px;">🔒 LOGOUT</button>
+            </div>
+        `;
+    }
+    
+    // Panel Admin lengkap + pembuatan key untuk member VIP
+    function getAdminPanel() {
+        let keysList = generatedKeys.map(k => {
+            let status = k.usedBy ? `🔴 Dipakai oleh ${k.usedBy}` : (isKeyValid(k) ? '🟢 AKTIF' : '🔴 EXPIRED');
+            let expireDate = k.expiryDate ? new Date(k.expiryDate).toLocaleString() : 'Permanen';
+            return `<div class="badge-key">🔑 ${k.key} | ${status} | Berlaku: ${expireDate}</div>`;
+        }).join('');
+        return `
+            <div class="glass-panel">
+                <div class="cyber-title"><h2>👑 ADMIN PANEL · MASTER KEY 👑</h2><div style="color:#0ff;">BUAT KEY UNTUK MEMBER VIP · ANTI BAN GACOR 100%</div></div>
+                <div class="admin-area">
+                    <div style="font-weight:bold;">⚙️ GENERATE KEY VIP (YanzzCITELVVIP)</div>
+                    <div class="flex-btns">
+                        <select id="durationSelect">
+                            <option value="1day">1 Hari</option>
+                            <option value="3day">3 Hari</option>
+                            <option value="4day">4 Hari</option>
+                            <option value="5day">5 Hari</option>
+                            <option value="2week">2 Minggu</option>
+                            <option value="1month">1 Bulan</option>
+                            <option value="permanent">PERMANEN</option>
+                        </select>
+                        <button class="login-btn" id="genKeyBtn" style="margin:0; padding:0.5rem;">✨ BUAT KEY</button>
+                    </div>
+                    <div id="newKeyDisplay" class="info-tier" style="margin-top:8px; word-break:break-all;"></div>
+                </div>
+                <hr>
+                <div><strong>📋 KEY YANG SUDAH DIGENERATE:</strong></div>
+                <div style="max-height:180px; overflow-y:auto;">${keysList || '<i>Belum ada key</i>'}</div>
+                <hr>
+                ${getModMenuHTML()}
+                <button class="login-btn" id="logoutBtn" style="margin-top:12px;">🚪 LOGOUT ADMIN</button>
+            </div>
+        `;
+    }
+    
+    // HTML fitur MOD MENU (auto headshot, body lock, detect enemy, inject driver)
+    function getModMenuHTML() {
+        return `
+            <div class="feature-card" style="background:#06131e; border-radius:1.5rem; padding:0.9rem; margin:1rem 0;">
+                <div style="display:flex; justify-content:space-between;"><span>🎯 AUTO HEADSHOT</span><label style="position:relative; display:inline-block; width:50px;"><input type="checkbox" id="ahsToggle" style="width:0;height:0;opacity:0;"><span id="ahsSlider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#1e2a3a; border-radius:34px;"></span></label></div>
+                <div id="ahsStatus" style="font-size:0.7rem;">● Nonaktif</div>
+            </div>
+            <div class="feature-card" style="background:#06131e; border-radius:1.5rem; padding:0.9rem; margin:1rem 0;">
+                <div style="display:flex; justify-content:space-between;"><span>🔒 BODY LOCK / AIMLOCK</span><label style="position:relative; display:inline-block; width:50px;"><input type="checkbox" id="lockToggle" style="width:0;height:0;opacity:0;"><span id="lockSlider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#1e2a3a; border-radius:34px;"></span></label></div>
+                <div id="lockStatus" style="font-size:0.7rem;">● Nonaktif</div>
+            </div>
+            <div class="feature-card" style="background:#06131e; border-radius:1.5rem; padding:0.9rem; margin:1rem 0;">
+                <div style="display:flex; justify-content:space-between;"><span>👁️ DETECT ENEMY (ESP)</span><label style="position:relative; display:inline-block; width:50px;"><input type="checkbox" id="espToggle" style="width:0;height:0;opacity:0;"><span id="espSlider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#1e2a3a; border-radius:34px;"></span></label></div>
+                <div id="espInfo" style="font-size:0.7rem;">📡 musuh tidak terdeteksi</div>
+            </div>
+            <button class="login-btn" id="injectBtn" style="margin:0.3rem 0;">💉 INJECT DRIVER (ANTI BAN + ROOT HIDE)</button>
+            <div id="systemMsg" class="info-tier" style="background:#03101a; padding:6px;">🟢 MOD MENU SIAP | AKTIFKAN FITUR</div>
+        `;
+    }
+    
+    // Event untuk toggle dan simulated memory
+    function attachModMenuEvents(roleType) {
+        let ahsActive=false, lockActive=false, espActive=false, injected=false;
+        const ahsCheck = document.getElementById('ahsToggle');
+        const lockCheck = document.getElementById('lockToggle');
+        const espCheck = document.getElementById('espToggle');
+        if(!ahsCheck) return;
+        const ahsSlider = document.getElementById('ahsSlider');
+        const lockSlider = document.getElementById('lockSlider');
+        const espSlider = document.getElementById('espSlider');
+        const ahsStatus = document.getElementById('ahsStatus');
+        const lockStatus = document.getElementById('lockStatus');
+        const espInfo = document.getElementById('espInfo');
+        const sysMsgDiv = document.getElementById('systemMsg');
+        const injectBtn = document.getElementById('injectBtn');
+        
+        function updateSliders() {
+            ahsSlider.style.background = ahsActive ? '#00ccdd' : '#1e2a3a';
+            lockSlider.style.background = lockActive ? '#00ccdd' : '#1e2a3a';
+            espSlider.style.background = espActive ? '#00ccdd' : '#1e2a3a';
+            if(ahsActive && injected) ahsStatus.innerHTML = '✅ AUTO HEADSHOT ACTIVE (bone kepala)';
+            else if(ahsActive && !injected) ahsStatus.innerHTML = '⚠️ PERLU INJECT DRIVER';
+            else ahsStatus.innerHTML = '● AUTO HS off';
+            
+            if(lockActive && injected) lockStatus.innerHTML = '✅ BODY LOCK ON (aim magnetic)';
+            else if(lockActive && !injected) lockStatus.innerHTML = '⚠️ butuh inject driver';
+            else lockStatus.innerHTML = '● BODY LOCK off';
+            
+            if(espActive && injected) espInfo.innerHTML = '🟢 ENEMY DETECTED → 4 musuh (ESP + radar jarak 12-85m)';
+            else if(espActive && !injected) espInfo.innerHTML = '❌ INJECT driver untuk deteksi musuh';
+            else espInfo.innerHTML = '👁️ ESP mati';
+            
+            let riskNote = (roleType === 'mmbt') ? '⚠️ PERINGATAN RAW BAN AKTIF' : (roleType === 'vvip' ? '⚡ VIP MODE : anti ban kecil efektif' : '🔰 ADMIN MODE proteksi penuh');
+            sysMsgDiv.innerHTML = injected ? `🚀 DRIVER TERINJEKSI | ${riskNote} | fitur siap 100%` : `💉 TEKAN INJECT UNTUK AKTIFKAN MOD + ANTI ROOT (${riskNote})`;
+        }
+        
+        if(ahsCheck) ahsCheck.addEventListener('change',(e)=>{ ahsActive=e.target.checked; updateSliders(); });
+        if(lockCheck) lockCheck.addEventListener('change',(e)=>{ lockActive=e.target.checked; updateSliders(); });
+        if(espCheck) espCheck.addEventListener('change',(e)=>{ espActive=e.target.checked; updateSliders(); });
+        if(injectBtn) injectBtn.onclick = () => { injected=true; updateSliders(); sysMsgDiv.innerHTML = `✅ INJECT SUKSES! MOD MENU GACOR | ANTI BAN ${roleType === 'vvip' ? 'VIP' : (roleType==='admin'?'ADMIN TOTAL':'RAW RISK')} AKTIF`; };
+        updateSliders();
+        
+        // logout
+        const logoutBtn = document.getElementById('logoutBtn');
+        if(logoutBtn) logoutBtn.onclick = () => { currentSession.loggedIn=false; render(); };
+    }
+    
+    function attachAdminEvents() {
+        const genBtn = document.getElementById('genKeyBtn');
+        const durationSelect = document.getElementById('durationSelect');
+        const newKeyDisplay = document.getElementById('newKeyDisplay');
+        if(genBtn) {
+            genBtn.onclick = () => {
+                let duration = durationSelect.value;
+                let expiryDate = null;
+                const now = new Date();
+                if(duration === '1day') expiryDate = new Date(now.setDate(now.getDate()+1));
+                else if(duration === '3day') expiryDate = new Date(now.setDate(now.getDate()+3));
+                else if(duration === '4day') expiryDate = new Date(now.setDate(now.getDate()+4));
+                else if(duration === '5day') expiryDate = new Date(now.setDate(now.getDate()+5));
+                else if(duration === '2week') expiryDate = new Date(now.setDate(now.getDate()+14));
+                else if(duration === '1month') expiryDate = new Date(now.setMonth(now.getMonth()+1));
+                else if(duration === 'permanent') expiryDate = null;
+                
+                const newKey = generateRandomKey();
+                generatedKeys.push({
+                    key: newKey,
+                    expiryDate: expiryDate ? expiryDate.toISOString() : null,
+                    usedBy: null,
+                    createdAt: new Date().toISOString()
+                });
+                saveKeys();
+                newKeyDisplay.innerHTML = `🔑 NEW KEY: <strong style="color:cyan;">${newKey}</strong> (${durationSelect.options[durationSelect.selectedIndex].text})`;
+                render(); // refresh tampilan admin
+            };
+        }
+    }
+    
+    render();
+</script>
+</body>
+</html>
